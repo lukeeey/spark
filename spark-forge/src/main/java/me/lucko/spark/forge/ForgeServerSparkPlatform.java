@@ -20,6 +20,11 @@
 
 package me.lucko.spark.forge;
 
+import com.google.gson.JsonPrimitive;
+
+import me.lucko.spark.monitor.data.DataProvider;
+import me.lucko.spark.monitor.data.MonitoringManager;
+import me.lucko.spark.monitor.data.providers.TpsDataProvider;
 import me.lucko.spark.sampler.TickCounter;
 
 import net.minecraft.command.ICommandSender;
@@ -31,11 +36,24 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class ForgeServerSparkPlatform extends ForgeSparkPlatform {
 
+    private final TickCounter tickCounter;
+
     public ForgeServerSparkPlatform(SparkForgeMod mod) {
         super(mod);
+        this.tickCounter = new ForgeTickCounter(TickEvent.Type.SERVER);
+        this.tickCounter.start();
+
+        MonitoringManager monitoringManager = getMonitoringManager();
+        monitoringManager.addDataProvider("tps", new TpsDataProvider(this.tickCounter));
+        monitoringManager.addDataProvider("players", DataProvider.syncProvider(() -> {
+            return new JsonPrimitive(FMLCommonHandler.instance().getMinecraftServerInstance().getCurrentPlayerCount());
+        }));
+
+        super.scheduler.scheduleWithFixedDelay(monitoringManager, 5, 5, TimeUnit.SECONDS);
     }
 
     @Override
@@ -51,8 +69,8 @@ public class ForgeServerSparkPlatform extends ForgeSparkPlatform {
     }
 
     @Override
-    public TickCounter newTickCounter() {
-        return new ForgeTickCounter(TickEvent.Type.SERVER);
+    public TickCounter getTickCounter() {
+        return this.tickCounter;
     }
 
     @Override

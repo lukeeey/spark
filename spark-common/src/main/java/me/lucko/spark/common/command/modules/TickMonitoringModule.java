@@ -25,7 +25,6 @@ import me.lucko.spark.common.command.Command;
 import me.lucko.spark.common.command.CommandModule;
 import me.lucko.spark.common.command.tabcomplete.TabCompleter;
 import me.lucko.spark.monitor.TickMonitor;
-import me.lucko.spark.sampler.TickCounter;
 
 import java.util.function.Consumer;
 
@@ -37,7 +36,7 @@ public class TickMonitoringModule<S> implements CommandModule<S> {
     @Override
     public void registerCommands(Consumer<Command<S>> consumer) {
         consumer.accept(Command.<S>builder()
-                .aliases("monitoring")
+                .aliases("tickmonitoring")
                 .argumentUsage("threshold", "percentage increase")
                 .argumentUsage("without-gc", null)
                 .executor((platform, sender, arguments) -> {
@@ -49,12 +48,13 @@ public class TickMonitoringModule<S> implements CommandModule<S> {
                         }
 
                         try {
-                            TickCounter tickCounter = platform.newTickCounter();
-                            this.activeTickMonitor = new ReportingTickMonitor(platform, tickCounter, threshold, !arguments.boolFlag("without-gc"));
+                            this.activeTickMonitor = new ReportingTickMonitor(platform, threshold, !arguments.boolFlag("without-gc"));
+                            platform.getTickCounter().addTickTask(this.activeTickMonitor);
                         } catch (UnsupportedOperationException e) {
                             platform.sendPrefixedMessage(sender, "&cNot supported!");
                         }
                     } else {
+                        platform.getTickCounter().removeTickTask(this.activeTickMonitor);
                         this.activeTickMonitor.close();
                         this.activeTickMonitor = null;
                         platform.sendPrefixedMessage("&7Tick monitor disabled.");
@@ -68,8 +68,8 @@ public class TickMonitoringModule<S> implements CommandModule<S> {
     private class ReportingTickMonitor extends TickMonitor {
         private final SparkPlatform<S> platform;
 
-        ReportingTickMonitor(SparkPlatform<S> platform, TickCounter tickCounter, int percentageChangeThreshold, boolean monitorGc) {
-            super(tickCounter, percentageChangeThreshold, monitorGc);
+        ReportingTickMonitor(SparkPlatform<S> platform, int percentageChangeThreshold, boolean monitorGc) {
+            super(platform.getTickCounter(), percentageChangeThreshold, monitorGc);
             this.platform = platform;
         }
 

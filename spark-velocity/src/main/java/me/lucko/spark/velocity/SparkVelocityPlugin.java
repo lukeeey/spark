@@ -20,6 +20,7 @@
 
 package me.lucko.spark.velocity;
 
+import com.google.gson.JsonPrimitive;
 import com.google.inject.Inject;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.event.PostOrder;
@@ -31,6 +32,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 
 import me.lucko.spark.common.SparkPlatform;
+import me.lucko.spark.monitor.data.MonitoringManager;
 import me.lucko.spark.sampler.ThreadDumper;
 import me.lucko.spark.sampler.TickCounter;
 
@@ -41,6 +43,7 @@ import net.kyori.text.format.TextColor;
 import net.kyori.text.serializer.ComponentSerializers;
 
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 @Plugin(
         id = "spark",
@@ -114,7 +117,7 @@ public class SparkVelocityPlugin {
         }
 
         @Override
-        public TickCounter newTickCounter() {
+        public TickCounter getTickCounter() {
             throw new UnsupportedOperationException();
         }
     };
@@ -127,6 +130,11 @@ public class SparkVelocityPlugin {
 
     @Subscribe(order = PostOrder.FIRST)
     public void onEnable(ProxyInitializeEvent e) {
+        MonitoringManager monitoringManager = this.sparkPlatform.getMonitoringManager();
+        monitoringManager.addDataProvider("players", () -> new JsonPrimitive(this.proxy.getPlayerCount()));
+
+        this.proxy.getScheduler().buildTask(this, monitoringManager).repeat(5, TimeUnit.SECONDS).schedule();
+
         this.proxy.getCommandManager().register((sender, args) -> {
             if (!sender.hasPermission("spark")) {
                 TextComponent msg = TextComponent.builder("You do not have permission to use this command.").color(TextColor.RED).build();

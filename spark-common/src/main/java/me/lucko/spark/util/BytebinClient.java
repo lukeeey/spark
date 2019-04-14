@@ -22,6 +22,7 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
+
 package me.lucko.spark.util;
 
 import okhttp3.MediaType;
@@ -35,14 +36,12 @@ import java.io.IOException;
 /**
  * Utility for posting content to bytebin.
  */
-public class BytebinClient {
+public class BytebinClient extends AbstractHttpClient {
 
     /** The bytebin URL */
     private final String url;
     /** The client user agent */
     private final String userAgent;
-    /** The http client */
-    protected final OkHttpClient okHttp;
 
     /**
      * Creates a new bytebin instance
@@ -50,44 +49,101 @@ public class BytebinClient {
      * @param url the bytebin url
      * @param userAgent the client user agent string
      */
-    public BytebinClient(String url, String userAgent) {
+    public BytebinClient(OkHttpClient okHttpClient, String url, String userAgent) {
+        super(okHttpClient);
         if (url.endsWith("/")) {
-            this.url = url + "post";
+            this.url = url;
         } else {
-            this.url = url + "/post";
+            this.url = url + "/";
         }
         this.userAgent = userAgent;
-        this.okHttp = new OkHttpClient();
     }
 
     /**
-     * Posts GZIP compressed content to bytebin.
+     * POSTs GZIP compressed content to bytebin.
      *
      * @param buf the compressed content
      * @param contentType the type of the content
+     * @param allowModification if the paste should be modifiable
      * @return the key of the resultant content
      * @throws IOException if an error occurs
      */
-    public String postGzippedContent(byte[] buf, MediaType contentType) throws IOException {
+    public Content postContent(byte[] buf, MediaType contentType, boolean allowModification) throws IOException {
         RequestBody body = RequestBody.create(contentType, buf);
 
         Request.Builder requestBuilder = new Request.Builder()
-                .url(this.url)
+                .url(this.url + "post")
+                .header("User-Agent", this.userAgent)
+                .header("Content-Encoding", "gzip");
+
+        if (allowModification) {
+            requestBuilder.header("Allow-Modification", "true");
+        }
+
+        Request request = requestBuilder.post(body).build();
+        try (Response response = makeHttpRequest(request)) {
+            String key = response.header("Location");
+            if (key == null) {
+                throw new IllegalStateException("Key not returned");
+            }
+
+            if (allowModification) {
+                String modificationKey = response.header("Modification-Key");
+                if (modificationKey == null) {
+                    throw new IllegalStateException("Modification key not returned");
+                }
+                return new Content(key, modificationKey);
+            } else {
+                return new Content(key);
+            }
+        }
+    }
+
+    /**
+     * PUTs modified GZIP compressed content to bytebin in place of existing content.
+     *
+     * @param existingContent the existing content
+     * @param buf the compressed content to put
+     * @param contentType the type of the content
+     * @throws IOException if an error occurs
+     */
+    public void modifyContent(Content existingContent, byte[] buf, MediaType contentType) throws IOException {
+        if (!existingContent.modifiable) {
+            throw new IllegalArgumentException("Existing content is not modifiable");
+        }
+
+        RequestBody body = RequestBody.create(contentType, buf);
+
+        Request.Builder requestBuilder = new Request.Builder()
+                .url(this.url + existingContent.key())
                 .header("User-Agent", this.userAgent)
                 .header("Content-Encoding", "gzip")
-                .post(body);
+                .header("Modification-Key", existingContent.modificationKey);
 
-        Request request = requestBuilder.build();
-        try (Response response = makeHttpRequest(request)) {
-            return response.header("Location");
+        Request request = requestBuilder.put(body).build();
+        makeHttpRequest(request).close();
+    }
+
+    public static final class Content {
+        private final String key;
+        private final boolean modifiable;
+        private final String modificationKey;
+
+        Content(String key) {
+            this.key = key;
+            this.modifiable = false;
+            this.modificationKey = null;
+        }
+
+        Content(String key, String modificationKey) {
+            this.key = key;
+            this.modifiable = true;
+            this.modificationKey = modificationKey;
+        }
+
+        public String key() {
+            return this.key;
         }
     }
 
-    protected Response makeHttpRequest(Request request) throws IOException {
-        Response response = this.okHttp.newCall(request).execute();
-        if (!response.isSuccessful()) {
-            throw new RuntimeException("Request was unsuccessful: " + response.code() + " - " + response.message());
-        }
-        return response;
-    }
 }

@@ -20,6 +20,8 @@
 
 package me.lucko.spark.forge;
 
+import me.lucko.spark.monitor.data.MonitoringManager;
+import me.lucko.spark.monitor.data.providers.TpsDataProvider;
 import me.lucko.spark.sampler.TickCounter;
 
 import net.minecraft.client.Minecraft;
@@ -31,6 +33,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class ForgeClientSparkPlatform extends ForgeSparkPlatform {
 
@@ -38,8 +41,17 @@ public class ForgeClientSparkPlatform extends ForgeSparkPlatform {
         ClientCommandHandler.instance.registerCommand(new ForgeClientSparkPlatform(mod));
     }
 
+    private final TickCounter tickCounter;
+
     public ForgeClientSparkPlatform(SparkForgeMod mod) {
         super(mod);
+        this.tickCounter = new ForgeTickCounter(TickEvent.Type.CLIENT);
+        this.tickCounter.start();
+
+        MonitoringManager monitoringManager = getMonitoringManager();
+        monitoringManager.addDataProvider("tps", new TpsDataProvider(tickCounter));
+
+        super.scheduler.scheduleWithFixedDelay(monitoringManager, 5, 5, TimeUnit.SECONDS);
     }
 
     @Override
@@ -48,8 +60,8 @@ public class ForgeClientSparkPlatform extends ForgeSparkPlatform {
     }
 
     @Override
-    public TickCounter newTickCounter() {
-        return new ForgeTickCounter(TickEvent.Type.CLIENT);
+    public TickCounter getTickCounter() {
+        return this.tickCounter;
     }
 
     @Override

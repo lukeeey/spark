@@ -20,9 +20,13 @@
 
 package me.lucko.spark.sponge;
 
+import com.google.gson.JsonPrimitive;
 import com.google.inject.Inject;
 
 import me.lucko.spark.common.SparkPlatform;
+import me.lucko.spark.monitor.data.DataProvider;
+import me.lucko.spark.monitor.data.MonitoringManager;
+import me.lucko.spark.monitor.data.providers.TpsDataProvider;
 import me.lucko.spark.sampler.ThreadDumper;
 import me.lucko.spark.sampler.TickCounter;
 
@@ -38,6 +42,7 @@ import org.spongepowered.api.plugin.Dependency;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.scheduler.AsynchronousExecutor;
 import org.spongepowered.api.scheduler.SpongeExecutorService;
+import org.spongepowered.api.scheduler.SynchronousExecutor;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
@@ -51,6 +56,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -69,9 +75,12 @@ public class SparkSpongePlugin implements CommandCallable {
 
     private final Game game;
     private final Path configDirectory;
+    private final SpongeExecutorService syncExecutor;
     private final SpongeExecutorService asyncExecutor;
 
     private final SparkPlatform<CommandSource> sparkPlatform = new SparkPlatform<CommandSource>() {
+        private final TickCounter tickCounter = new SpongeTickCounter(SparkSpongePlugin.this);
+
         private Text colorize(String message) {
             return TextSerializers.FORMATTING_CODE.deserialize(message);
         }
@@ -135,20 +144,30 @@ public class SparkSpongePlugin implements CommandCallable {
         }
 
         @Override
-        public TickCounter newTickCounter() {
-            return new SpongeTickCounter(SparkSpongePlugin.this);
+        public TickCounter getTickCounter() {
+            return this.tickCounter;
         }
     };
 
     @Inject
-    public SparkSpongePlugin(Game game, @ConfigDir(sharedRoot = false) Path configDirectory, @AsynchronousExecutor SpongeExecutorService asyncExecutor) {
+    public SparkSpongePlugin(Game game, @ConfigDir(sharedRoot = false) Path configDirectory, @SynchronousExecutor SpongeExecutorService syncExecutor, @AsynchronousExecutor SpongeExecutorService asyncExecutor) {
         this.game = game;
         this.configDirectory = configDirectory;
+        this.syncExecutor = syncExecutor;
         this.asyncExecutor = asyncExecutor;
     }
 
     @Listener
     public void onServerStart(GameStartedServerEvent event) {
+        TickCounter tickCounter = this.sparkPlatform.getTickCounter();
+        tickCounter.start();
+
+        MonitoringManager monitoringManager = this.sparkPlatform.getMonitoringManager();
+        monitoringManager.addDataProvider("tps", new TpsDataProvider(tickCounter));
+        monitoringManager.addDataProvider("players", DataProvider.syncProvider(() -> new JsonPrimitive(this.game.getServer().getOnlinePlayers().size())));
+
+        this.syncExecutor.scheduleWithFixedDelay(monitoringManager, 5, 5, TimeUnit.SECONDS);
+
         this.game.getCommandManager().register(this, this, "spark");
     }
 

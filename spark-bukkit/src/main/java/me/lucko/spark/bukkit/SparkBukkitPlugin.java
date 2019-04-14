@@ -20,7 +20,12 @@
 
 package me.lucko.spark.bukkit;
 
+import com.google.gson.JsonPrimitive;
+
 import me.lucko.spark.common.SparkPlatform;
+import me.lucko.spark.monitor.data.DataProvider;
+import me.lucko.spark.monitor.data.MonitoringManager;
+import me.lucko.spark.monitor.data.providers.TpsDataProvider;
 import me.lucko.spark.sampler.ThreadDumper;
 import me.lucko.spark.sampler.TickCounter;
 
@@ -37,6 +42,7 @@ import java.util.List;
 public class SparkBukkitPlugin extends JavaPlugin {
 
     private final SparkPlatform<CommandSender> sparkPlatform = new SparkPlatform<CommandSender>() {
+        private final TickCounter tickCounter = new BukkitTickCounter(SparkBukkitPlugin.this);
 
         private String colorize(String message) {
             return ChatColor.translateAlternateColorCodes('&', message);
@@ -94,10 +100,23 @@ public class SparkBukkitPlugin extends JavaPlugin {
         }
 
         @Override
-        public TickCounter newTickCounter() {
-            return new BukkitTickCounter(SparkBukkitPlugin.this);
+        public TickCounter getTickCounter() {
+            return this.tickCounter;
         }
     };
+
+    @Override
+    public void onEnable() {
+        TickCounter tickCounter = this.sparkPlatform.getTickCounter();
+        tickCounter.start();
+
+        MonitoringManager monitoringManager = this.sparkPlatform.getMonitoringManager();
+        monitoringManager.addDataProvider("tps", new TpsDataProvider(tickCounter));
+        monitoringManager.addDataProvider("players", DataProvider.syncProvider(() -> new JsonPrimitive(getServer().getOnlinePlayers().size())));
+        monitoringManager.addDataProvider("entities", new EntityDataProvider(getServer()));
+
+        getServer().getScheduler().runTaskTimer(this, monitoringManager, 3, 20 * 5);
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

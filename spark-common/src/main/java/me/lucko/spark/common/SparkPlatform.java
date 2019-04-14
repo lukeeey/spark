@@ -25,19 +25,27 @@ import com.google.common.collect.ImmutableList;
 import me.lucko.spark.common.command.Arguments;
 import me.lucko.spark.common.command.Command;
 import me.lucko.spark.common.command.modules.MemoryModule;
+import me.lucko.spark.common.command.modules.MonitoringModule;
 import me.lucko.spark.common.command.modules.SamplerModule;
 import me.lucko.spark.common.command.modules.TickMonitoringModule;
 import me.lucko.spark.common.command.tabcomplete.CompletionSupplier;
 import me.lucko.spark.common.command.tabcomplete.TabCompleter;
+import me.lucko.spark.monitor.data.MonitoringManager;
+import me.lucko.spark.monitor.data.providers.CpuDataProvider;
+import me.lucko.spark.monitor.data.providers.MemoryDataProvider;
 import me.lucko.spark.sampler.ThreadDumper;
 import me.lucko.spark.sampler.TickCounter;
 import me.lucko.spark.util.BytebinClient;
+import me.lucko.spark.util.SocketmasterClient;
+
+import okhttp3.OkHttpClient;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -49,8 +57,12 @@ public abstract class SparkPlatform<S> {
 
     /** The URL of the viewer frontend */
     public static final String VIEWER_URL = "https://sparkprofiler.github.io/#";
+    /** The shared okhttp client */
+    private static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient.Builder().pingInterval(6, TimeUnit.SECONDS).build();
     /** The bytebin instance used by the platform */
-    public static final BytebinClient BYTEBIN_CLIENT = new BytebinClient("https://bytebin.lucko.me/", "spark-plugin");
+    public static final BytebinClient BYTEBIN_CLIENT = new BytebinClient(OK_HTTP_CLIENT, "https://bytebin.lucko.me/", "spark-plugin");
+    /** The socketmaster instance used by the platform */
+    public static final SocketmasterClient SOCKETMASTER_CLIENT = new SocketmasterClient(OK_HTTP_CLIENT, "socketmaster.lucko.me", "spark-plugin");
 
     /** The prefix used in all messages */
     private static final String PREFIX = "&8[&fspark&8] &7";
@@ -58,13 +70,26 @@ public abstract class SparkPlatform<S> {
     private static <T> List<Command<T>> prepareCommands() {
         ImmutableList.Builder<Command<T>> builder = ImmutableList.builder();
         new SamplerModule<T>().registerCommands(builder::add);
+        new MonitoringModule<T>().registerCommands(builder::add);
         new TickMonitoringModule<T>().registerCommands(builder::add);
         new MemoryModule<T>().registerCommands(builder::add);
         return builder.build();
     }
 
     private final List<Command<S>> commands = prepareCommands();
-    
+
+    private final MonitoringManager<S> monitoringManager;
+
+    public SparkPlatform() {
+        this.monitoringManager = new MonitoringManager<>(this, (int) (TimeUnit.MINUTES.toSeconds(15) / 5));
+        this.monitoringManager.addDataProvider("cpu", new CpuDataProvider());
+        this.monitoringManager.addDataProvider("memory", new MemoryDataProvider());
+    }
+
+    public MonitoringManager<S> getMonitoringManager() {
+        return this.monitoringManager;
+    }
+
     // abstract methods implemented by each platform
     public abstract String getVersion();
     public abstract Path getPluginFolder();
@@ -74,7 +99,7 @@ public abstract class SparkPlatform<S> {
     public abstract void sendLink(String url);
     public abstract void runAsync(Runnable r);
     public abstract ThreadDumper getDefaultThreadDumper();
-    public abstract TickCounter newTickCounter();
+    public abstract TickCounter getTickCounter();
 
     public void sendPrefixedMessage(S sender, String message) {
         sendMessage(sender, PREFIX + message);

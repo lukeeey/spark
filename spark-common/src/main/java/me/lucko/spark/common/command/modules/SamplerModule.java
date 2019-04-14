@@ -109,7 +109,7 @@ public class SamplerModule<S> implements CommandModule<S> {
                     TickCounter tickCounter = null;
                     if (ticksOver != -1) {
                         try {
-                            tickCounter = platform.newTickCounter();
+                            tickCounter = platform.getTickCounter();
                         } catch (UnsupportedOperationException e) {
                             platform.sendPrefixedMessage(sender, "&cTick counting is not supported!");
                             return;
@@ -247,7 +247,7 @@ public class SamplerModule<S> implements CommandModule<S> {
         platform.runAsync(() -> {
             byte[] output = sampler.formCompressedDataPayload();
             try {
-                String key = SparkPlatform.BYTEBIN_CLIENT.postGzippedContent(output, JSON_TYPE);
+                String key = SparkPlatform.BYTEBIN_CLIENT.postContent(output, JSON_TYPE, false).key();
                 platform.sendPrefixedMessage("&bSampling results:");
                 platform.sendLink(SparkPlatform.VIEWER_URL + key);
             } catch (IOException e) {

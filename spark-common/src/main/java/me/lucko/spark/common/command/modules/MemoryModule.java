@@ -64,7 +64,7 @@ public class MemoryModule<S> implements CommandModule<S> {
 
                         byte[] output = heapDump.formCompressedDataPayload();
                         try {
-                            String key = SparkPlatform.BYTEBIN_CLIENT.postGzippedContent(output, JSON_TYPE);
+                            String key = SparkPlatform.BYTEBIN_CLIENT.postContent(output, JSON_TYPE, false).key();
                             platform.sendPrefixedMessage("&bHeap dump summmary output:");
                             platform.sendLink(SparkPlatform.VIEWER_URL + key);
                         } catch (IOException e) {

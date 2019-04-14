@@ -18,47 +18,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package me.lucko.spark.sampler;
+package me.lucko.spark.monitor.data;
 
-/**
- * A hook with the game's "tick loop".
- */
-public interface TickCounter extends AutoCloseable {
+import com.google.gson.JsonObject;
 
-    /**
-     * Starts the counter
-     */
-    void start();
+public interface DataListener {
 
-    /**
-     * Stops the counter
-     */
-    @Override
-    void close();
-
-    /**
-     * Gets the current tick number
-     *
-     * @return the current tick
-     */
-    int getCurrentTick();
-
-    /**
-     * Adds a task to be called each time the tick increments
-     *
-     * @param runnable the task
-     */
-    void addTickTask(TickTask runnable);
-
-    /**
-     * Removes a tick task
-     *
-     * @param runnable the task
-     */
-    void removeTickTask(TickTask runnable);
-
-    interface TickTask {
-        void onTick(TickCounter counter);
-    }
+    void onDataCollection(long time, JsonObject data);
 
 }

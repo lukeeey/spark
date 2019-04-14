@@ -20,7 +20,10 @@
 
 package me.lucko.spark.bungeecord;
 
+import com.google.gson.JsonPrimitive;
+
 import me.lucko.spark.common.SparkPlatform;
+import me.lucko.spark.monitor.data.MonitoringManager;
 import me.lucko.spark.sampler.ThreadDumper;
 import me.lucko.spark.sampler.TickCounter;
 
@@ -36,6 +39,7 @@ import net.md_5.bungee.api.plugin.TabExecutor;
 
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 public class SparkBungeeCordPlugin extends Plugin {
 
@@ -97,13 +101,18 @@ public class SparkBungeeCordPlugin extends Plugin {
         }
 
         @Override
-        public TickCounter newTickCounter() {
+        public TickCounter getTickCounter() {
             throw new UnsupportedOperationException();
         }
     };
 
     @Override
     public void onEnable() {
+        MonitoringManager monitoringManager = this.sparkPlatform.getMonitoringManager();
+        monitoringManager.addDataProvider("players", () -> new JsonPrimitive(getProxy().getPlayers().size()));
+
+        getProxy().getScheduler().schedule(this, monitoringManager, 5, 5, TimeUnit.SECONDS);
+
         getProxy().getPluginManager().registerCommand(this, new SparkCommand());
     }
 

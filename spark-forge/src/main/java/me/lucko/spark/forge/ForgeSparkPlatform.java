@@ -41,8 +41,8 @@ import net.minecraftforge.fml.common.Mod;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
 
@@ -51,7 +51,7 @@ public abstract class ForgeSparkPlatform extends SparkPlatform<ICommandSender> i
 
     private final SparkForgeMod mod;
 
-    private final ExecutorService worker = Executors.newSingleThreadExecutor(
+    protected final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("spark-forge-async-worker").build()
     );
 
@@ -101,7 +101,7 @@ public abstract class ForgeSparkPlatform extends SparkPlatform<ICommandSender> i
 
     @Override
     public void runAsync(Runnable r) {
-        this.worker.execute(r);
+        this.scheduler.execute(r);
     }
 
     @Override
