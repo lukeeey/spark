@@ -21,14 +21,12 @@
 package me.lucko.spark.bukkit;
 
 import com.google.gson.JsonPrimitive;
-
 import me.lucko.spark.common.SparkPlatform;
 import me.lucko.spark.monitor.data.DataProvider;
 import me.lucko.spark.monitor.data.MonitoringManager;
 import me.lucko.spark.monitor.data.providers.TpsDataProvider;
 import me.lucko.spark.sampler.ThreadDumper;
 import me.lucko.spark.sampler.TickCounter;
-
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -113,7 +111,7 @@ public class SparkBukkitPlugin extends JavaPlugin {
         MonitoringManager monitoringManager = this.sparkPlatform.getMonitoringManager();
         monitoringManager.addDataProvider("tps", new TpsDataProvider(tickCounter));
         monitoringManager.addDataProvider("players", DataProvider.syncProvider(() -> new JsonPrimitive(getServer().getOnlinePlayers().size())));
-        monitoringManager.addDataProvider("entities", new EntityDataProvider(getServer()));
+        monitoringManager.addDataProvider("world", new WorldDataProvider(getServer()));
 
         getServer().getScheduler().runTaskTimer(this, monitoringManager, 3, 20 * 5);
     }

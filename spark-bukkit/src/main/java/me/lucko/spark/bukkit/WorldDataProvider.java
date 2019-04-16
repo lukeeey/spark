@@ -36,14 +36,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.IntSupplier;
 
-public class EntityDataProvider implements DataProvider {
+public class WorldDataProvider implements DataProvider {
     private final Server server;
 
-    private final Map<World, IntSupplier> chunkCounters = LoadingMap.of(new HashMap<>(), EntityDataProvider::getChunkCounter);
-    private final Map<World, IntSupplier> entityCounters = LoadingMap.of(new HashMap<>(), EntityDataProvider::getEntityCounter);
-    private final Map<World, IntSupplier> tickableTileEntityCounters = LoadingMap.of(new HashMap<>(), EntityDataProvider::getTickableTileEntityCounter);
+    private final Map<World, IntSupplier> chunkCounters = LoadingMap.of(new HashMap<>(), WorldDataProvider::getChunkCounter);
+    private final Map<World, IntSupplier> entityCounters = LoadingMap.of(new HashMap<>(), WorldDataProvider::getEntityCounter);
+    private final Map<World, IntSupplier> tickableTileEntityCounters = LoadingMap.of(new HashMap<>(), WorldDataProvider::getTickableTileEntityCounter);
 
-    public EntityDataProvider(Server server) {
+    public WorldDataProvider(Server server) {
         this.server = server;
     }
 
