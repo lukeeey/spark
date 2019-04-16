@@ -21,7 +21,6 @@
 package me.lucko.spark.common;
 
 import com.google.common.collect.ImmutableList;
-
 import me.lucko.spark.common.command.Arguments;
 import me.lucko.spark.common.command.Command;
 import me.lucko.spark.common.command.modules.MemoryModule;
@@ -37,7 +36,6 @@ import me.lucko.spark.sampler.ThreadDumper;
 import me.lucko.spark.sampler.TickCounter;
 import me.lucko.spark.util.BytebinClient;
 import me.lucko.spark.util.SocketmasterClient;
-
 import okhttp3.OkHttpClient;
 
 import java.nio.file.Path;
@@ -49,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * Abstract command handling class used by all platforms.
+ * Abstract spark implementation used by all platforms.
  *
  * @param <S> the sender (e.g. CommandSender) type used by the platform
  */

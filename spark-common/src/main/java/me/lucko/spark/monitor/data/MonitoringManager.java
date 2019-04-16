@@ -23,7 +23,6 @@ package me.lucko.spark.monitor.data;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-
 import me.lucko.spark.common.SparkPlatform;
 
 import java.util.ArrayList;
@@ -33,6 +32,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Manages all monitoring activity on the platform.
+ *
+ * @param <S> the platform sender type
+ */
 public class MonitoringManager<S> implements Runnable, AutoCloseable {
     private final SparkPlatform<S> platform;
     private final MonitoringPublisher<S> publisher;

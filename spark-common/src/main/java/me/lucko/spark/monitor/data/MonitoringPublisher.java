@@ -23,10 +23,8 @@ package me.lucko.spark.monitor.data;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-
 import me.lucko.spark.common.SparkPlatform;
 import me.lucko.spark.util.BytebinClient;
-
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -40,6 +38,11 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPOutputStream;
 
+/**
+ * Responsible for publishing monitoring data to the web services.
+ *
+ * @param <S> the platform sender type
+ */
 public class MonitoringPublisher<S> implements DataListener {
     private static final Gson GSON = new Gson();
     private static final MediaType JSON_TYPE = MediaType.parse("application/json; charset=utf-8");
@@ -48,6 +51,7 @@ public class MonitoringPublisher<S> implements DataListener {
     private final MonitoringManager monitoringManager;
 
     private WebSocket socket = null;
+    private int sentUpdates = 0;
     private BytebinClient.Content payload = null;
 
     public MonitoringPublisher(SparkPlatform<S> platform, MonitoringManager monitoringManager) {
@@ -62,10 +66,21 @@ public class MonitoringPublisher<S> implements DataListener {
         if (socket == null) {
             return;
         }
+
         this.platform.runAsync(() -> {
             JsonObject payload = new JsonObject();
             payload.add("time", new JsonPrimitive(time));
             payload.add("data", data);
+
+            this.sentUpdates++;
+            if (this.sentUpdates % 6 == 0) { // every 30 seconds
+                try {
+                    String fullDataKey = publish();
+                    payload.add("fullDataKey", new JsonPrimitive(fullDataKey));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
 
             socket.send(GSON.toJson(payload));
         });
