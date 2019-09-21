@@ -25,8 +25,8 @@ import me.lucko.spark.fabric.plugin.FabricSparkPlugin;
 import net.kyori.text.Component;
 import net.kyori.text.serializer.gson.GsonComponentSerializer;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandOutput;
-import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.text.Text;
 
 import java.util.UUID;
@@ -44,7 +44,7 @@ public class FabricCommandSender implements CommandSender {
     public String getName() {
         if (this.sender instanceof PlayerEntity) {
             return ((PlayerEntity) this.sender).getGameProfile().getName();
-        } else if (this.sender instanceof DedicatedServer) {
+        } else if (this.sender instanceof MinecraftServer) {
             return "Console";
         } else {
             return "unknown:" + this.sender.getClass().getSimpleName();

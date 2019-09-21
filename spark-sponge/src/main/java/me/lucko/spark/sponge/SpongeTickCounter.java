@@ -21,13 +21,14 @@
 package me.lucko.spark.sponge;
 
 import me.lucko.spark.common.sampler.TickCounter;
+import org.spongepowered.api.scheduler.Task;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class SpongeTickCounter implements TickCounter, Runnable {
     private final SpongeSparkPlugin plugin;
-    private org.spongepowered.api.scheduler.Task task;
+    private Task task;
 
     private final Set<TickTask> tasks = new HashSet<>();
     private int tick = 0;
@@ -46,7 +47,7 @@ public class SpongeTickCounter implements TickCounter, Runnable {
 
     @Override
     public void start() {
-        this.task = org.spongepowered.api.scheduler.Task.builder().intervalTicks(1).name("spark-ticker").execute(this).submit(this.plugin);
+        this.task = Task.builder().intervalTicks(1).name("spark-ticker").execute(this).submit(this.plugin);
     }
 
     @Override

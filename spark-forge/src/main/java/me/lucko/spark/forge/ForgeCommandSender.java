@@ -26,7 +26,7 @@ import net.kyori.text.Component;
 import net.kyori.text.serializer.gson.GsonComponentSerializer;
 import net.minecraft.command.ICommandSource;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.rcon.IServer;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.ITextComponent;
 
 import java.util.UUID;
@@ -44,7 +44,7 @@ public class ForgeCommandSender implements CommandSender {
     public String getName() {
         if (this.sender instanceof PlayerEntity) {
             return ((PlayerEntity) this.sender).getGameProfile().getName();
-        } else if (this.sender instanceof IServer) {
+        } else if (this.sender instanceof MinecraftServer) {
             return "Console";
         } else {
             return "unknown:" + this.sender.getClass().getSimpleName();
