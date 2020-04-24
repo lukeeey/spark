@@ -4,6 +4,7 @@ dependencies {
         exclude(module: 'text-api')
         exclude(module: 'text-serializer-gson')
     }
+    compile 'me.lucko:commodore:1.8'
     compileOnly 'com.destroystokyo.paper:paper-api:1.15.2-R0.1-SNAPSHOT'
     
     // placeholders

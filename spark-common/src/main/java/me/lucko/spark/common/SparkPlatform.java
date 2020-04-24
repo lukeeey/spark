@@ -162,6 +162,10 @@ public class SparkPlatform {
         return this.serverNormalOperationStartTime;
     }
 
+    public List<Command> getCommands() {
+        return this.commands;
+    }
+
     public void executeCommand(CommandSender sender, String[] args) {
         CommandResponseHandler resp = new CommandResponseHandler(this, sender);
 

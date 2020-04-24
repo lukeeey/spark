@@ -20,6 +20,8 @@
 
 package me.lucko.spark.bukkit;
 
+import me.lucko.commodore.Commodore;
+import me.lucko.commodore.CommodoreProvider;
 import me.lucko.spark.bukkit.placeholder.SparkMVdWPlaceholders;
 import me.lucko.spark.bukkit.placeholder.SparkPlaceholderApi;
 import me.lucko.spark.common.SparkPlatform;
@@ -65,6 +67,11 @@ public class BukkitSparkPlugin extends JavaPlugin implements SparkPlugin {
                 return true;
             };
             CommandMapUtil.registerCommand(this, this.tpsCommand, "tps");
+        }
+
+        if (CommodoreProvider.isSupported()) {
+            Commodore commodore = CommodoreProvider.getCommodore(this);
+            BukkitBrigadierProvider.register(commodore, getCommand("spark"), this.platform.getCommands());
         }
 
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
