@@ -22,3 +22,5 @@ include (
         'spark-nukkit',
         'spark-universal'
 )
+include 'spark-cloudburst'
+
